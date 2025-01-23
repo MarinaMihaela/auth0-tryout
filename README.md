@@ -1,19 +1,22 @@
-const axios = require('axios');
-
-async function getManagementApiToken() {
+async function createPasswordChangeTicket(email, redirectUrl) {
     const domain = 'YOUR_AUTH0_DOMAIN'; // e.g., mydomain.us.auth0.com
-    const clientId = 'YOUR_CLIENT_ID';
-    const clientSecret = 'YOUR_CLIENT_SECRET';
-    const audience = `https://${domain}/api/v2/`;
+    const { getManagementApiToken } = require('./auth0Utils');
+    const token = await getManagementApiToken();
 
-    const response = await axios.post(`https://${domain}/oauth/token`, {
-        client_id: clientId,
-        client_secret: clientSecret,
-        audience,
-        grant_type: 'client_credentials',
-    });
+    const response = await axios.post(
+        `https://${domain}/api/v2/tickets/password-change`,
+        {
+            user_email: email,
+            result_url: redirectUrl, // Optional: Where the user will be redirected after password reset
+        },
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
 
-    return response.data.access_token;
+    return response.data.ticket;
 }
 
-module.exports = { getManagementApiToken };
+module.exports = { getManagementApiToken, createPasswordChangeTicket };
