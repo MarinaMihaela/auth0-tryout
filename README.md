@@ -1,65 +1,23 @@
-const axios = require('axios');
-const { URLSearchParams } = require('url');
-require('dotenv').config();
+const express = require('express');
+const { createPasswordChangeTicketById } = require('../utils/auth0Utils');
+
+const router = express.Router();
 
 /**
- * Fetches a Management API access token for production using form-urlencoded data.
- * @returns {Promise<string>} The Management API access token.
+ * POST /change-password
+ * Generates a password change ticket for the logged-in user using their Auth0 user ID.
  */
-async function getManagementApiToken() {
-    const options = {
-        method: 'POST',
-        url: `https://${process.env.AUTH0_DOMAIN}/oauth/token`,
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        data: new URLSearchParams({
-            grant_type: 'client_credentials',
-            client_id: process.env.AUTH0_CLIENT_ID,
-            client_secret: process.env.AUTH0_CLIENT_SECRET,
-            audience: process.env.AUTH0_AUDIENCE,
-        }),
-    };
+router.post('/change-password', async (req, res) => {
+    const { sub: userId } = req.oidc.user; // Retrieve the user ID from the authenticated user
+    const redirectUrl = 'https://your-app.com/password-changed'; // Optional redirect URL
 
     try {
-        const response = await axios.request(options);
-        return response.data.access_token; // Return the access token
+        const ticketUrl = await createPasswordChangeTicketById(userId, redirectUrl);
+        res.json({ message: 'Password change link generated successfully.', ticketUrl });
     } catch (error) {
-        console.error('Error fetching Management API token:', error.response?.data || error.message);
-        throw new Error('Failed to fetch Management API token.');
+        console.error('Error generating password change link:', error.message);
+        res.status(500).json({ error: 'Failed to generate password change link.' });
     }
-}
+});
 
-/**
- * Creates a password change ticket for a user.
- * @param {string} email - The email of the user requesting the password change.
- * @param {string} [redirectUrl] - Optional: A URL to redirect the user after password reset.
- * @returns {Promise<string>} The password change ticket URL.
- */
-async function createPasswordChangeTicket(email, redirectUrl) {
-    const token = await getManagementApiToken();
-
-    const options = {
-        method: 'POST',
-        url: `https://${process.env.AUTH0_DOMAIN}/api/v2/tickets/password-change`,
-        headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-        },
-        data: {
-            user_email: email,
-            result_url: redirectUrl || null,
-        },
-    };
-
-    try {
-        const response = await axios.request(options);
-        return response.data.ticket; // Return the password change ticket URL
-    } catch (error) {
-        console.error('Error creating password change ticket:', error.response?.data || error.message);
-        throw new Error('Failed to create password change ticket.');
-    }
-}
-
-module.exports = {
-    getManagementApiToken,
-    createPasswordChangeTicket,
-};
+module.exports = router;
