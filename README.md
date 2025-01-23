@@ -1,65 +1,39 @@
-const axios = require('axios');
-const { URLSearchParams } = require('url');
-require('dotenv').config();
+<%- include('partials/header') -%>
 
-/**
- * Fetches a Management API access token for production using form-urlencoded data.
- * @returns {Promise<string>} The Management API access token.
- */
-async function getManagementApiToken() {
-    const options = {
-        method: 'POST',
-        url: `https://${process.env.AUTH0_DOMAIN}/oauth/token`,
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        data: new URLSearchParams({
-            grant_type: 'client_credentials',
-            client_id: process.env.AUTH0_CLIENT_ID,
-            client_secret: process.env.AUTH0_CLIENT_SECRET,
-            audience: process.env.AUTH0_AUDIENCE,
-        }),
-    };
+<h1 class="text-4xl mb-4">Welcome <%= user.nickname %></h1>
 
+<% if (user.picture) { %>
+  <img class="block py-3" src="<%= user.picture %>" width="300">
+<% } %>
+
+<p class="py-3">
+  This is the content of <code class="bg-gray-200">req.user</code>.<br>
+  <strong>Note:</strong> <code class="bg-gray-200">_raw</code> and <code class="bg-gray-200">_json</code> properties have been omitted.
+</p>
+
+<pre class="block bg-gray-300 p-4 text-sm overflow-scroll"><%= JSON.stringify(user, null, 2) %></pre>
+
+<div class="py-4">
+  <button id="changePasswordBtn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700">
+    Change Password
+  </button>
+</div>
+
+<script>
+  document.getElementById('changePasswordBtn').addEventListener('click', async () => {
     try {
-        const response = await axios.request(options);
-        return response.data.access_token; // Return the access token
-    } catch (error) {
-        console.error('Error fetching Management API token:', error.response?.data || error.message);
-        throw new Error('Failed to fetch Management API token.');
+      const response = await fetch('/api/change-password', { method: 'POST' });
+      const data = await response.json();
+      if (response.ok) {
+        alert('Password change link: ' + data.ticketUrl);
+      } else {
+        alert('Error: ' + data.error);
+      }
+    } catch (err) {
+      console.error('Error:', err);
+      alert('An unexpected error occurred.');
     }
-}
+  });
+</script>
 
-/**
- * Creates a password change ticket for a user by user ID.
- * @param {string} userId - The Auth0 user ID (e.g., "auth0|123456789").
- * @param {string} [redirectUrl] - Optional: A URL to redirect the user after password reset.
- * @returns {Promise<string>} The password change ticket URL.
- */
-async function createPasswordChangeTicketById(userId, redirectUrl) {
-    const token = await getManagementApiToken();
-
-    const options = {
-        method: 'POST',
-        url: `https://${process.env.AUTH0_DOMAIN}/api/v2/tickets/password-change`,
-        headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-        },
-        data: {
-            user_id: userId,
-            result_url: redirectUrl || null,
-        },
-    };
-
-    try {
-        const response = await axios.request(options);
-        return response.data.ticket; // Return the password change ticket URL
-    } catch (error) {
-        console.error('Error creating password change ticket:', error.response?.data || error.message);
-        throw new Error('Failed to create password change ticket.');
-    }
-}
-
-module.exports = {
-    getManagementApiToken,
-    createPasswordChangeTicketById,
-};
+<%- include('partials/footer') -%>
