@@ -1,39 +1,45 @@
-<%- include('partials/header') -%>
+app.post('/change-password', async (req, res) => {
+  if (!req.oidc || !req.oidc.user) {
+    return res.status(401).json({ error: 'User is not authenticated.' });
+  }
 
-<h1 class="text-4xl mb-4">Welcome <%= user.nickname %></h1>
+  const { sub: userId } = req.oidc.user; // Obține ID-ul utilizatorului logat
+  const redirectUrl = `${req.protocol}://${req.get('host')}/password-changed`; // Opțional: URL pentru redirecționare
 
-<% if (user.picture) { %>
-  <img class="block py-3" src="<%= user.picture %>" width="300">
-<% } %>
-
-<p class="py-3">
-  This is the content of <code class="bg-gray-200">req.user</code>.<br>
-  <strong>Note:</strong> <code class="bg-gray-200">_raw</code> and <code class="bg-gray-200">_json</code> properties have been omitted.
-</p>
-
-<pre class="block bg-gray-300 p-4 text-sm overflow-scroll"><%= JSON.stringify(user, null, 2) %></pre>
-
-<div class="py-4">
-  <button id="changePasswordBtn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700">
-    Change Password
-  </button>
-</div>
-
-<script>
-  document.getElementById('changePasswordBtn').addEventListener('click', async () => {
-    try {
-      const response = await fetch('/api/change-password', { method: 'POST' });
-      const data = await response.json();
-      if (response.ok) {
-        alert('Password change link: ' + data.ticketUrl);
-      } else {
-        alert('Error: ' + data.error);
+  try {
+    // Obține access token de la Auth0
+    const tokenResponse = await axios.post(
+      `https://${process.env.AUTH0_DOMAIN}/oauth/token`,
+      new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: process.env.AUTH0_CLIENT_ID,
+        client_secret: process.env.AUTH0_CLIENT_SECRET,
+        audience: `https://${process.env.AUTH0_DOMAIN}/api/v2/`,
+      }),
+      {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       }
-    } catch (err) {
-      console.error('Error:', err);
-      alert('An unexpected error occurred.');
-    }
-  });
-</script>
+    );
+    const accessToken = tokenResponse.data.access_token;
 
-<%- include('partials/footer') -%>
+    // Creează ticket-ul pentru resetarea parolei
+    const ticketResponse = await axios.post(
+      `https://${process.env.AUTH0_DOMAIN}/api/v2/tickets/password-change`,
+      {
+        user_id: userId,
+        result_url: redirectUrl,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    res.json({ message: 'Password change link generated successfully.', ticketUrl: ticketResponse.data.ticket });
+  } catch (error) {
+    console.error('Error generating password change link:', error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to generate password change link.' });
+  }
+});
