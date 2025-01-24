@@ -1,47 +1,14 @@
-<%- include('partials/header') -%>
+Summary: What is Auth0 Deploy CLI and How Can It Be Used?
+Auth0 Deploy CLI is a command-line tool provided by Auth0 for managing and automating tenant configurations. It allows you to export, modify, and deploy configurations like applications, rules, connections, and tenant settings across multiple environments (e.g., dev, stage, prod).
 
-<h1 class="text-4xl mb-4">Welcome <%= user.nickname %></h1>
-
-<% if (user.picture) { %>
-  <img class="block py-3" src="<%= user.picture %>" width="300">
-<% } %>
-
-<p class="py-3">
-  This is the content of <code class="bg-gray-200">req.user</code>.<br>
-  <strong>Note:</strong> <code class="bg-gray-200">_raw</code> and <code class="bg-gray-200">_json</code> properties have been omitted.
-</p>
-
-<pre class="block bg-gray-300 p-4 text-sm overflow-scroll"><%= JSON.stringify(user, null, 2) %></pre>
-
-<div class="py-4">
-  <button id="changePasswordBtn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700">
-    Change Password
-  </button>
-</div>
-<script src="https://cdn.auth0.com/js/auth0/9.11/auth0.min.js"> </script>
-
-<script>
-  document.getElementById('changePasswordBtn').addEventListener('click', async (req,res) => {
-    const { email } = req.body;
-
-    var webAuth = new auth0.WebAuth({
-    domain:       'marina-v2.eu.auth0.com',
-    clientID:     'xhk3OuCdT8QeTHnpqZlwtfpR4QcbmEdr'
-  });
-  
-  webAuth.changePassword({
-    connection: 'Username-Password-Authentication',
-    email:   email,
-   // organization: 'ORGANIZATION_ID'
-  }, function (err, resp) {
-    if(err){
-      console.log(err.message);
-    }else{
-      console.log(resp);
-    }
-  });
-  });
-
-</script>
-
-<%- include('partials/footer') -%>
+Key Features:
+Export Configurations: Retrieve the current state of your Auth0 tenant as a structured set of files.
+Import Configurations: Apply configuration files to a tenant, automating the deployment of changes.
+Environment Syncing: Simplify synchronization between environments (e.g., pushing configurations from dev to stage or prod).
+Version Control Integration: Store exported configurations in version control systems (like Git) for tracking and collaboration.
+Validation and Dry Runs: Test configuration changes without applying them.
+How It Can Be Used:
+Environment Management: Standardize configurations across multiple environments (e.g., callback URLs, connection settings).
+Automation: Integrate with CI/CD pipelines to automate the deployment of Auth0 settings during application releases.
+Backup and Restore: Create backups of tenant configurations and easily restore them if needed.
+Configuration as Code: Treat Auth0 configurations as code by storing and managing them in a structured, reproducible format.
