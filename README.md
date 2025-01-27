@@ -1,32 +1,33 @@
-// Auth0 Action: Trigger MFA Based on Email Domain
-// To use this Action:
-// 1. Go to the Actions section of the Auth0 Dashboard.
-// 2. Create a new Action in the Login flow.
-// 3. Paste this code and configure it as needed.
+Cloning Development Tenant Settings to a Production Tenant
 
-/**
- * Trigger MFA for users with specific email domains.
- * @param {Event} event - Details about the user and the context of the login.
- * @param {API} api - Interface for modifying the login transaction.
- */
-exports.onExecutePostLogin = async (event, api) => {
-  // List of domains requiring MFA
-  const domainsRequiringMFA = ['example.com', 'secure.com'];
+To replicate your development tenant's configuration—including roles, permissions, applications, APIs, actions, and branding—to a production tenant, Auth0 provides the Deploy CLI tool. This tool facilitates the export and import of tenant configurations, enabling seamless migration across environments.
+Steps to Clone Tenant Settings:
+Install the Deploy CLI:
+Ensure you have Node.js installed.
+Install the Deploy CLI globally using npm:
 
-  // Extract the domain from the user's email address
-  const emailDomain = event.user.email.split('@')[1];
+npm install -g auth0-deploy-cli
 
-  // Check if the domain requires MFA
-  if (domainsRequiringMFA.includes(emailDomain)) {
-    // Check if the user is already enrolled in MFA
-    const isMfaEnrolled = event.user.multifactor && event.user.multifactor.length > 0;
+Export Configuration from Development Tenant:
+Create a configuration file (config-dev.json) with your development tenant's domain and credentials.
+Use the Deploy CLI to export the tenant's configuration:
 
-    if (isMfaEnrolled) {
-      // Trigger MFA challenge using OTP
-      api.authentication.challengeWithAny([{ type: 'otp' }]);
-    } else {
-      // Enroll the user in MFA using OTP
-      api.authentication.enrollWith({ type: 'otp' });
-    }
-  }
-};
+a0deploy export --config_file config-dev.json --output_folder path/to/export
+
+Prepare the Exported Data:
+Review the exported files to ensure all necessary resources are included.
+Modify any environment-specific settings, such as callback URLs or secrets, to align with the production environment.
+Import Configuration into Production Tenant:
+Create a configuration file (config-prod.json) with your production tenant's domain and credentials.
+Use the Deploy CLI to import the configuration:
+
+a0deploy import --config_file config-prod.json --input_file path/to/export
+
+
+Considerations:
+Environment-Specific Values: Ensure that values specific to the development environment are updated appropriately for production.
+Auth0
+Feature Flags: Be aware that certain tenant-specific feature flags may not transfer automatically. It's advisable to verify and configure these settings manually in the production tenant as needed.
+Auth0 Community
+Testing: After importing, thoroughly test the production tenant to confirm that all configurations function as intended.
+
